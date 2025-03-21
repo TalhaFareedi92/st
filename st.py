@@ -3,10 +3,9 @@ import requests
 import time
 
 # API Endpoints
-API_URL = "http://18.222.108.147:5000/tts/generate"
-STATUS_URL = "http://18.222.108.147:5000/tts/files/status/"
-RESULT_URL = "http://18.222.108.147:5000/tts/files/result/"
-ALL_FILES_URL = "http://18.222.108.147:5000/tts/all-files"
+API_URL = "http://3.145.183.202:5050/openvoice/generate/"
+STATUS_URL = "http://3.145.183.202:5050/openvoice/files/status/"
+RESULT_URL = "http://3.145.183.202:5050/openvoice/files/result/"
 
 # Streamlit UI Configuration
 st.set_page_config(page_title="AI TTS Processor", layout="wide")
@@ -54,7 +53,7 @@ st.markdown(
 with st.sidebar:
     st.title("AI TTS Processor")
     st.markdown("Upload a voice file and text to process.")
-    menu_option = st.radio("Navigation", ["Upload & Process", "Check Status", "Download Voice", "All Files"])
+    menu_option = st.radio("Navigation", ["Upload & Process", "Check Status", "Download Voice"])
 
 # Main Content
 st.markdown("<div class='main-header'>Text-to-Speech Processing</div>", unsafe_allow_html=True)
@@ -131,18 +130,3 @@ elif menu_option == "Download Voice":
                 st.error("Failed to fetch cloned voice.")
                 st.json(result_response.json())
 
-elif menu_option == "All Files":
-    st.subheader("Step 4: View All Processed Files")
-    if st.button("Get All Files"):
-        with st.spinner("Fetching file list..."):
-            all_files_response = requests.get(ALL_FILES_URL)
-            time.sleep(2)
-        
-        if all_files_response.status_code == 200:
-            all_files_json = all_files_response.json()
-            files_list = all_files_json.get("files", [])
-            st.success("List of processed files:")
-            st.json(all_files_json)
-        else:
-            st.error("Failed to fetch file list.")
-            st.json(all_files_response.json())
