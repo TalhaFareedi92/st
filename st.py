@@ -56,7 +56,7 @@ with st.sidebar:
     menu_option = st.radio("Navigation", ["Upload & Process", "Check Status", "Download Voice"])
 
 # Main Content
-st.markdown("<div class='main-header'>Text-to-Speech Processing</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-header'>Text-to-Speech Processing Using Open Voice</div>", unsafe_allow_html=True)
 
 if menu_option == "Upload & Process":
     st.subheader("Step 1: Upload Voice and Text")
