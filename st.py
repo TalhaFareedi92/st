@@ -3,7 +3,7 @@ import requests
 import time
 
 # API Endpoints
-API_URL = "http://3.145.183.202:5050/openvoice/generate/"
+API_URL = "http://3.145.183.202:5050/openvoice/generate"
 STATUS_URL = "http://3.145.183.202:5050/openvoice/files/status/"
 RESULT_URL = "http://3.145.183.202:5050/openvoice/files/result/"
 
@@ -36,11 +36,7 @@ st.markdown(
     .stButton>button:hover {
         background-color: #357ABD;
     }
-    .stTextInput>div>div>input {
-        border-radius: 5px;
-        padding: 10px;
-    }
-    .stTextArea>div>textarea {
+    .stTextInput>div>div>input, .stTextArea>div>textarea {
         border-radius: 5px;
         padding: 10px;
     }
@@ -72,18 +68,30 @@ if menu_option == "Upload & Process":
             with st.spinner("Uploading and processing..."):
                 files = {"audio": (uploaded_file.name, uploaded_file.read(), uploaded_file.type)}
                 data = {"text": text_input}
-                response = requests.post(API_URL, files=files, data=data)
-                time.sleep(2)
-            
-            if response.status_code == 202:
-                response_json = response.json()
-                file_id = response_json.get("file_id")
-                st.session_state["file_id"] = file_id
-                st.success("Your request has been queued successfully!")
-                st.json(response_json)
-            else:
-                st.error("Failed to process request.")
-                st.json(response.json())
+
+                try:
+                    response = requests.post(API_URL, files=files, data=data)
+                    time.sleep(2)
+
+                    if response.status_code == 202:
+                        try:
+                            response_json = response.json()
+                            file_id = response_json.get("file_id")
+                            if file_id:
+                                st.session_state["file_id"] = file_id
+                                st.success("Your request has been queued successfully!")
+                                st.json(response_json)
+                            else:
+                                st.error("File ID not found in response.")
+                        except requests.exceptions.JSONDecodeError:
+                            st.error("Unexpected response format from the API.")
+                            st.text(response.text)  # Display raw response for debugging
+                    else:
+                        st.error(f"Failed to process request. Status Code: {response.status_code}")
+                        st.text(response.text)  # Display raw response for debugging
+
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Request failed: {e}")
 
 elif menu_option == "Check Status":
     st.subheader("Step 2: Check File Processing Status")
@@ -94,20 +102,29 @@ elif menu_option == "Check Status":
             st.error("Please enter a valid file ID.")
         else:
             with st.spinner("Checking status..."):
-                status_response = requests.get(f"{STATUS_URL}{file_id_input}")
-                time.sleep(2)
-            
-            if status_response.status_code == 200:
-                status_json = status_response.json()
-                status = status_json.get("status")
-                st.success(f"Status: {status}")
-                st.json(status_json)
-                if status == "completed":
-                    st.session_state["status"] = "completed"
-                    st.session_state["file_id"] = file_id_input  # Save the latest completed file ID
-            else:
-                st.error("Failed to fetch status.")
-                st.json(status_response.json())
+                try:
+                    status_response = requests.get(f"{STATUS_URL}{file_id_input}")
+                    time.sleep(2)
+
+                    if status_response.status_code == 200:
+                        try:
+                            status_json = status_response.json()
+                            status = status_json.get("status")
+                            st.success(f"Status: {status}")
+                            st.json(status_json)
+
+                            if status == "completed":
+                                st.session_state["status"] = "completed"
+                                st.session_state["file_id"] = file_id_input  # Save the latest completed file ID
+                        except requests.exceptions.JSONDecodeError:
+                            st.error("Unexpected response format.")
+                            st.text(status_response.text)  # Show raw response
+                    else:
+                        st.error(f"Failed to fetch status. Status Code: {status_response.status_code}")
+                        st.text(status_response.text)
+
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Request failed: {e}")
 
 elif menu_option == "Download Voice":
     st.subheader("Step 3: Download Processed Voice File")
@@ -118,15 +135,22 @@ elif menu_option == "Download Voice":
             st.error("Please enter a valid file ID.")
         else:
             with st.spinner("Fetching processed voice file..."):
-                result_response = requests.get(f"{RESULT_URL}{file_id_input}")
-                time.sleep(2)
-            
-            if result_response.status_code == 200:
-                with open("cloned_voice.wav", "wb") as f:
-                    f.write(result_response.content)
-                st.success("Cloned voice file downloaded successfully!")
-                st.audio("cloned_voice.wav", format="audio/wav")
-            else:
-                st.error("Failed to fetch cloned voice.")
-                st.json(result_response.json())
+                try:
+                    result_response = requests.get(f"{RESULT_URL}{file_id_input}", stream=True)
+                    time.sleep(2)
 
+                    if result_response.status_code == 200:
+                        output_file = f"cloned_voice_{file_id_input}.wav"
+                        with open(output_file, "wb") as f:
+                            for chunk in result_response.iter_content(chunk_size=8192):
+                                if chunk:
+                                    f.write(chunk)
+                        
+                        st.success("Cloned voice file downloaded successfully!")
+                        st.audio(output_file, format="audio/wav")
+                    else:
+                        st.error(f"Failed to fetch cloned voice. Status Code: {result_response.status_code}")
+                        st.text(result_response.text)
+
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Request failed: {e}")
