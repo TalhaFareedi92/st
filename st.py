@@ -1,156 +1,239 @@
+# import streamlit as st
+# import requests
+# import base64
+
+# st.set_page_config(page_title="Voice Cloner", layout="centered")
+
+# # ---------- Global Styling ----------
+# st.markdown("""
+#     <style>
+#     /* Dark mode background */
+#     .stApp {
+#         background-color: #0f1117;
+#         color: #fff;
+#     }
+#     /* Center title */
+#     .main-title {
+#         text-align: center;
+#         font-size: 3rem;
+#         font-weight: 700;
+#         color: #d6d6d6;
+#         margin-top: 2rem;
+#     }
+#     .subtitle {
+#         text-align: center;
+#         color: #aaa;
+#         margin-bottom: 2rem;
+#     }
+#     /* Spinner animation */
+#     .loader {
+#         border: 8px solid #333;
+#         border-top: 8px solid #00ffcc;
+#         border-radius: 50%;
+#         width: 60px;
+#         height: 60px;
+#         animation: spin 1s linear infinite;
+#         margin: 30px auto;
+#     }
+#     @keyframes spin {
+#         0% { transform: rotate(0deg); }
+#         100% { transform: rotate(360deg); }
+#     }
+#     /* Expand text area */
+#     .stTextArea textarea {
+#         min-height: 250px !important;
+#         padding: 1rem;
+#         resize: vertical;
+#     }
+#     </style>
+# """, unsafe_allow_html=True)
+
+# # ---------- Sidebar Inputs ----------
+# st.sidebar.title("🎛️ Controls")
+# ref_audio = st.sidebar.file_uploader("📁 Upload reference audio", type=["mp3", "wav", "ogg", "flac", "m4a", "aac", "wma"])
+# gen_text = st.sidebar.text_area("✍️ Text to generate (required)")
+
+# # Add a button to toggle extra settings
+# extra_settings = st.sidebar.checkbox("🔧 Extra Settings")
+
+# # Only show speed control if "Extra Settings" is enabled
+# if extra_settings:
+#     speed = st.sidebar.slider("⏩ Speech speed", min_value=0.1, max_value=2.0, value=0.9, step=0.1)
+# else:
+#     speed = None
+
+# generate_button = st.sidebar.button("🚀 Generate Voice")
+
+# # ---------- Main UI ----------
+# st.markdown('<div class="main-title">🎙️ Voice Cloner</div>', unsafe_allow_html=True)
+# st.markdown('<div class="subtitle">Clone a voice from a sample audio and custom text</div>', unsafe_allow_html=True)
+
+# # Create a placeholder for the loader
+# loader_placeholder = st.empty()
+
+# if generate_button:
+#     if not ref_audio or not gen_text.strip():
+#         st.error("❗ Please upload an audio file and enter text.")
+#     else:
+#         # Show loader immediately
+#         with loader_placeholder:
+#             st.markdown('<div class="loader"></div>', unsafe_allow_html=True)
+        
+#         # Prepare the files
+#         files = {
+#             'ref_audio': (ref_audio.name, ref_audio, 'audio/mpeg'),
+#         }
+
+#         # Prepare the data
+#         data = {'gen_text': gen_text}
+#         if extra_settings and speed != 0.9:
+#             data['speed'] = str(speed)
+
+#         try:
+#             response = requests.post("http://98.84.143.182:5000/clone", files=files, data=data)
+
+#             # Clear loader before showing results
+#             loader_placeholder.empty()
+
+#             if response.status_code == 200:
+#                 audio_bytes = response.content
+#                 b64_audio = base64.b64encode(audio_bytes).decode()
+#                 st.success("✅ Voice generated successfully!")
+
+#                 st.markdown(f"""
+#                     <audio autoplay controls style="width: 100%; margin-top: 1rem;">
+#                         <source src="data:audio/wav;base64,{b64_audio}" type="audio/wav">
+#                         Your browser does not support the audio element.
+#                     </audio>
+#                 """, unsafe_allow_html=True)
+#             else:
+#                 st.error(f"API Error: {response.status_code} — {response.text}")
+
+#         except Exception as e:
+#             loader_placeholder.empty()
+#             st.error(f"⚠️ Request failed: {e}")
+
 import streamlit as st
 import requests
-import time
+import base64
 
-# API Endpoints
-API_URL = "http://3.145.183.202:5050/openvoice/generate"
-STATUS_URL = "http://3.145.183.202:5050/openvoice/files/status/"
-RESULT_URL = "http://3.145.183.202:5050/openvoice/files/result/"
+st.set_page_config(page_title="Voice Cloner", layout="centered")
 
-# Streamlit UI Configuration
-st.set_page_config(page_title="AI TTS Processor", layout="wide")
-
-# Custom CSS for Styling
-st.markdown(
-    """
+# ---------- Global Styling ----------
+st.markdown("""
     <style>
-    body {
-        background-color: #f4f4f4;
-        font-family: 'Arial', sans-serif;
+    /* Dark mode background */
+    .stApp {
+        background-color: #0f1117;
+        color: #fff;
     }
-    .main-header {
+    /* Center title */
+    .main-title {
         text-align: center;
-        font-size: 2rem;
-        font-weight: bold;
-        color: #4A90E2;
-        margin-bottom: 20px;
+        font-size: 3rem;
+        font-weight: 700;
+        color: #d6d6d6;
+        margin-top: 2rem;
     }
-    .stButton>button {
-        background-color: #4A90E2;
-        color: white;
-        border-radius: 5px;
-        padding: 10px;
-        font-size: 16px;
-        transition: 0.3s;
+    .subtitle {
+        text-align: center;
+        color: #aaa;
+        margin-bottom: 2rem;
     }
-    .stButton>button:hover {
-        background-color: #357ABD;
+    /* Spinner animation */
+    .loader {
+        border: 8px solid #333;
+        border-top: 8px solid #00ffcc;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+        margin: 30px auto;
     }
-    .stTextInput>div>div>input, .stTextArea>div>textarea {
-        border-radius: 5px;
-        padding: 10px;
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    /* Expand text area */
+    .stTextArea textarea {
+        min-height: 250px !important;
+        padding: 1rem;
+        resize: vertical;
     }
     </style>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
-# Sidebar
-with st.sidebar:
-    st.title("AI TTS Processor")
-    st.markdown("Upload a voice file and text to process.")
-    menu_option = st.radio("Navigation", ["Upload & Process", "Check Status", "Download Voice"])
+# ---------- Sidebar Inputs ----------
+st.sidebar.title("🎛️ Controls")
 
-# Main Content
-st.markdown("<div class='main-header'>Text-to-Speech Processing Using Open Voice</div>", unsafe_allow_html=True)
+# Radio button to select the API
+api_choice = st.sidebar.radio("🌐 Select API", ["Spanish language", "English language"])
 
-if menu_option == "Upload & Process":
-    st.subheader("Step 1: Upload Voice and Text")
-    with st.form("tts_form"):
-        text_input = st.text_area("Enter text:")
-        uploaded_file = st.file_uploader("Upload voice file", type=["wav", "mp3", "ogg"])
-        submit_button = st.form_submit_button("Submit")
-    
-    if submit_button:
-        if not text_input or not uploaded_file:
-            st.error("Please provide both text and a voice file.")
-        else:
-            with st.spinner("Uploading and processing..."):
-                files = {"audio": (uploaded_file.name, uploaded_file.read(), uploaded_file.type)}
-                data = {"text": text_input}
+ref_audio = st.sidebar.file_uploader("📁 Upload reference audio", type=["mp3", "wav", "ogg", "flac", "m4a", "aac", "wma"])
+gen_text = st.sidebar.text_area("✍️ Text to generate (required)")
 
-                try:
-                    response = requests.post(API_URL, files=files, data=data)
-                    time.sleep(2)
+# Add a button to toggle extra settings
+extra_settings = st.sidebar.checkbox("🔧 Extra Settings")
 
-                    if response.status_code == 202:
-                        try:
-                            response_json = response.json()
-                            file_id = response_json.get("file_id")
-                            if file_id:
-                                st.session_state["file_id"] = file_id
-                                st.success("Your request has been queued successfully!")
-                                st.json(response_json)
-                            else:
-                                st.error("File ID not found in response.")
-                        except requests.exceptions.JSONDecodeError:
-                            st.error("Unexpected response format from the API.")
-                            st.text(response.text)  # Display raw response for debugging
-                    else:
-                        st.error(f"Failed to process request. Status Code: {response.status_code}")
-                        st.text(response.text)  # Display raw response for debugging
+# Only show speed control if "Extra Settings" is enabled
+if extra_settings:
+    speed = st.sidebar.slider("⏩ Speech speed", min_value=0.1, max_value=2.0, value=0.9, step=0.1)
+else:
+    speed = None
 
-                except requests.exceptions.RequestException as e:
-                    st.error(f"Request failed: {e}")
+generate_button = st.sidebar.button("🚀 Generate Voice")
 
-elif menu_option == "Check Status":
-    st.subheader("Step 2: Check File Processing Status")
-    file_id_input = st.text_input("Enter File ID:", st.session_state.get("file_id", ""))
-    
-    if st.button("Check Status"):
-        if not file_id_input:
-            st.error("Please enter a valid file ID.")
-        else:
-            with st.spinner("Checking status..."):
-                try:
-                    status_response = requests.get(f"{STATUS_URL}{file_id_input}")
-                    time.sleep(2)
+# ---------- Main UI ----------
+st.markdown('<div class="main-title">🎙️ Voice Cloner</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Clone a voice from a sample audio and custom text</div>', unsafe_allow_html=True)
 
-                    if status_response.status_code == 200:
-                        try:
-                            status_json = status_response.json()
-                            status = status_json.get("status")
-                            st.success(f"Status: {status}")
-                            st.json(status_json)
+# Create a placeholder for the loader
+loader_placeholder = st.empty()
 
-                            if status == "completed":
-                                st.session_state["status"] = "completed"
-                                st.session_state["file_id"] = file_id_input  # Save the latest completed file ID
-                        except requests.exceptions.JSONDecodeError:
-                            st.error("Unexpected response format.")
-                            st.text(status_response.text)  # Show raw response
-                    else:
-                        st.error(f"Failed to fetch status. Status Code: {status_response.status_code}")
-                        st.text(status_response.text)
+if generate_button:
+    if not ref_audio or not gen_text.strip():
+        st.error("❗ Please upload an audio file and enter text.")
+    else:
+        # Show loader immediately
+        with loader_placeholder:
+            st.markdown('<div class="loader"></div>', unsafe_allow_html=True)
+        
+        # Prepare the files
+        files = {
+            'ref_audio': (ref_audio.name, ref_audio, 'audio/mpeg'),
+        }
 
-                except requests.exceptions.RequestException as e:
-                    st.error(f"Request failed: {e}")
+        # Prepare the data
+        data = {'gen_text': gen_text}
+        if extra_settings and speed != 0.9:
+            data['speed'] = str(speed)
 
-elif menu_option == "Download Voice":
-    st.subheader("Step 3: Download Processed Voice File")
-    file_id_input = st.text_input("Enter File ID:", st.session_state.get("file_id", ""))
-    
-    if st.button("Get Cloned Voice"):
-        if not file_id_input:
-            st.error("Please enter a valid file ID.")
-        else:
-            with st.spinner("Fetching processed voice file..."):
-                try:
-                    result_response = requests.get(f"{RESULT_URL}{file_id_input}", stream=True)
-                    time.sleep(2)
+        try:
+            # Choose API endpoint based on user selection
+            if api_choice == "Spanish language":
+                api_url = "http://98.84.143.182:5000/clone"  # Replace with your first API endpoint
+            elif api_choice == "English language":
+                api_url = "http://98.84.143.182:5001/tts"  # Replace with your second API endpoint
 
-                    if result_response.status_code == 200:
-                        output_file = f"cloned_voice_{file_id_input}.wav"
-                        with open(output_file, "wb") as f:
-                            for chunk in result_response.iter_content(chunk_size=8192):
-                                if chunk:
-                                    f.write(chunk)
-                        
-                        st.success("Cloned voice file downloaded successfully!")
-                        st.audio(output_file, format="audio/wav")
-                    else:
-                        st.error(f"Failed to fetch cloned voice. Status Code: {result_response.status_code}")
-                        st.text(result_response.text)
+            response = requests.post(api_url, files=files, data=data)
 
-                except requests.exceptions.RequestException as e:
-                    st.error(f"Request failed: {e}")
+            # Clear loader before showing results
+            loader_placeholder.empty()
+
+            if response.status_code == 200:
+                audio_bytes = response.content
+                b64_audio = base64.b64encode(audio_bytes).decode()
+                st.success("✅ Voice generated successfully!")
+
+                st.markdown(f"""
+                    <audio autoplay controls style="width: 100%; margin-top: 1rem;">
+                        <source src="data:audio/wav;base64,{b64_audio}" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                """, unsafe_allow_html=True)
+            else:
+                st.error(f"API Error: {response.status_code} — {response.text}")
+
+        except Exception as e:
+            loader_placeholder.empty()
+            st.error(f"⚠️ Request failed: {e}")
