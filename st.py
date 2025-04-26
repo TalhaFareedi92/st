@@ -97,9 +97,9 @@ if generate_button:
         try:
             # Choose API endpoint based on user selection
             if api_choice == "Spanish language":
-                api_url = "http://98.84.143.182:5000/clone"  # Replace with your first API endpoint
+                api_url = "http://3.80.111.72:5000/clone"  # Replace with your first API endpoint
             elif api_choice == "English language":
-                api_url = "http://98.84.143.182:5001/tts"  # Replace with your second API endpoint
+                api_url = "http://3.80.111.72:5001/tts"  # Replace with your second API endpoint
 
             response = requests.post(api_url, files=files, data=data)
 
